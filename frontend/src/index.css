@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-dark-bg text-slate-100 antialiased overflow-x-hidden;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(31, 95, 255, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(4, 206, 120, 0.04) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+/* Custom dark scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0F17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Monospace numeric figures for aligned financial presentation */
+.tabular-numbers {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Glassmorphism panel helper */
+.glass-panel {
+  background: rgba(19, 27, 46, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+/* Mobile safe area spacing */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}

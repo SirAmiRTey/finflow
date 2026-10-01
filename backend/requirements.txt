@@ -1,0 +1,23 @@
+# FinFlow Backend Dependencies (Python 3.12+)
+
+# Web Framework & Server
+fastapi>=0.115.0,<1.0.0
+uvicorn[standard]>=0.30.0,<1.0.0
+python-multipart>=0.0.12,<1.0.0
+
+# Database & ORM
+sqlalchemy[asyncio]>=2.0.35,<3.0.0
+asyncpg>=0.29.0,<1.0.0
+
+# Data Validation & Settings
+pydantic>=2.9.2,<3.0.0
+pydantic-settings>=2.5.2,<3.0.0
+email-validator>=2.2.0,<3.0.0
+
+# Persian Calendar & Date Handling
+jdatetime>=5.0.2,<6.0.0
+
+# Security & Authentication
+passlib[bcrypt]>=1.7.4
+bcrypt==4.0.1
+pyjwt>=2.9.0,<3.0.0
