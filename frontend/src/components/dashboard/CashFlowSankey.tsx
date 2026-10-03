@@ -8,15 +8,24 @@ import { formatKToman, getJalaliPeriodLabel } from "@/utils/jalali";
 import { SankeyResponse } from "@/types";
 
 export const CashFlowSankey: React.FC = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
 
   const { data, isLoading } = useQuery<SankeyResponse>({
-    queryKey: ["analytics", "sankey", selectedPeriod],
+    queryKey: ["analytics", "sankey", selectedPeriod, selectedRange],
     queryFn: async () => {
-      const res = await apiClient.get<SankeyResponse>(`/analytics/sankey?period=${selectedPeriod}`);
+      const queryParam = selectedRange
+        ? `period=${selectedPeriod}&range=${selectedRange}`
+        : `period=${selectedPeriod}`;
+      const res = await apiClient.get<SankeyResponse>(`/analytics/sankey?${queryParam}`);
       return res.data;
     },
   });
+
+  const periodLabel = selectedRange
+    ? selectedRange === "all"
+      ? "All Time"
+      : `Last ${selectedRange.toUpperCase()}`
+    : getJalaliPeriodLabel(selectedPeriod);
 
   if (isLoading) {
     return (
@@ -49,14 +58,14 @@ export const CashFlowSankey: React.FC = () => {
               return `
                 <div class="space-y-1">
                   <div class="text-[11px] text-slate-400 font-medium">${params.data.source} → ${params.data.target}</div>
-                  <div class="text-sm font-mono font-bold text-white">${formatKToman(params.data.value)}</div>
+                  <div class="text-sm font-mono font-bold text-white tabular-nums">${formatKToman(params.data.value)} <span class="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></div>
                 </div>
               `;
             } else {
               return `
                 <div class="space-y-1">
                   <div class="text-[11px] text-slate-400 font-medium">Node: <span class="text-white font-semibold">${params.name}</span></div>
-                  <div class="text-sm font-mono font-bold text-brand">${formatKToman(params.value || 0)}</div>
+                  <div class="text-sm font-mono font-bold text-brand tabular-nums">${formatKToman(params.value || 0)} <span class="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></div>
                 </div>
               `;
             }
@@ -68,8 +77,8 @@ export const CashFlowSankey: React.FC = () => {
             layout: "none",
             top: 20,
             bottom: 20,
-            left: 20,
-            right: 20,
+            left: "5%",
+            right: "20%",
             nodeWidth: 18,
             nodeGap: 16,
             nodeAlign: "justify",
@@ -91,10 +100,18 @@ export const CashFlowSankey: React.FC = () => {
               opacity: 0.45,
             },
             label: {
-              color: "#E2E8F0",
-              fontSize: 11,
+              position: "right",
+              distance: 10,
+              color: "#F8FAFC",
+              fontSize: 12,
               fontFamily: "Inter, sans-serif",
               fontWeight: 500,
+              formatter: (params: any) => {
+                if (params.value !== undefined && params.value !== null) {
+                  return `${params.name} (${formatKToman(params.value)})`;
+                }
+                return params.name;
+              },
             },
           },
         ],
@@ -102,7 +119,7 @@ export const CashFlowSankey: React.FC = () => {
     : null;
 
   return (
-    <div className="p-5 sm:p-6 rounded-2xl bg-dark-surface border border-dark-border relative overflow-hidden flex flex-col justify-between">
+    <div className="p-5 sm:p-6 rounded-2xl bg-dark-surface border border-dark-border relative overflow-visible flex flex-col justify-between">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
         <div className="flex items-center gap-2.5">
@@ -112,18 +129,18 @@ export const CashFlowSankey: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">Cash Flow Sankey Flow</h3>
             <p className="text-[11px] text-slate-400">
-              Inflows &rarr; Inflow Pool &rarr; Expenditures & Savings ({getJalaliPeriodLabel(selectedPeriod)})
+              Inflows &rarr; Inflow Pool &rarr; Expenditures & Savings ({periodLabel})
             </p>
           </div>
         </div>
 
         {data && (
-          <div className="flex items-center gap-3 text-[11px] font-mono">
+          <div className="flex items-center gap-3 text-[11px] font-mono tabular-nums">
             <span className="text-slate-400">
-              Inflow: <strong className="text-inflow font-bold">{formatKToman(data.total_inflow)}</strong>
+              Inflow: <strong className="text-inflow font-bold">{formatKToman(data.total_inflow)}</strong> <span className="text-[10px] text-slate-400 font-sans">k-Toman</span>
             </span>
             <span className="text-slate-400">
-              Outflow: <strong className="text-outflow font-bold">{formatKToman(data.total_outflow)}</strong>
+              Outflow: <strong className="text-outflow font-bold">{formatKToman(data.total_outflow)}</strong> <span className="text-[10px] text-slate-400 font-sans">k-Toman</span>
             </span>
           </div>
         )}
@@ -131,10 +148,10 @@ export const CashFlowSankey: React.FC = () => {
 
       {/* Chart Canvas or Empty State */}
       {hasFlows ? (
-        <div className="w-full h-[340px]">
+        <div className="w-full h-[360px] sm:h-[420px] overflow-visible">
           <ReactECharts
             option={option}
-            style={{ width: "100%", height: "100%" }}
+            style={{ width: "100%", height: "100%", overflow: "visible" }}
             opts={{ renderer: "svg" }}
           />
         </div>
@@ -145,7 +162,7 @@ export const CashFlowSankey: React.FC = () => {
           </div>
           <p className="text-xs font-semibold text-slate-300">Insufficient flow volume</p>
           <p className="text-[11px] text-slate-500 max-w-xs mt-0.5">
-            Log both income and expense entries in {getJalaliPeriodLabel(selectedPeriod)} to visualize interactive Sankey channels.
+            Log both income and expense entries in {periodLabel} to visualize interactive Sankey channels.
           </p>
         </div>
       )}

@@ -67,6 +67,8 @@ export interface TransactionListResponse {
   total_expense: string;
 }
 
+export type TimeRange = "7d" | "30d" | "1y" | "all";
+
 export interface PeriodItem {
   period: string;
   label: string;

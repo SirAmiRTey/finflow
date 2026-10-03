@@ -7,16 +7,25 @@ import { formatKToman, getJalaliPeriodLabel } from "@/utils/jalali";
 import { HeatmapDayItem, HeatmapResponse } from "@/types";
 
 export const SpendingHeatmap: React.FC = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
   const [hoveredDay, setHoveredDay] = useState<HeatmapDayItem | null>(null);
 
   const { data, isLoading } = useQuery<HeatmapResponse>({
-    queryKey: ["analytics", "heatmap", selectedPeriod],
+    queryKey: ["analytics", "heatmap", selectedPeriod, selectedRange],
     queryFn: async () => {
-      const res = await apiClient.get<HeatmapResponse>(`/analytics/heatmap?period=${selectedPeriod}`);
+      const queryParam = selectedRange
+        ? `period=${selectedPeriod}&range=${selectedRange}`
+        : `period=${selectedPeriod}`;
+      const res = await apiClient.get<HeatmapResponse>(`/analytics/heatmap?${queryParam}`);
       return res.data;
     },
   });
+
+  const periodLabel = selectedRange
+    ? selectedRange === "all"
+      ? "All Time"
+      : `Last ${selectedRange.toUpperCase()}`
+    : getJalaliPeriodLabel(selectedPeriod);
 
   if (isLoading) {
     return (
@@ -60,7 +69,7 @@ export const SpendingHeatmap: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">Daily Spending Heatmap</h3>
             <p className="text-[11px] text-slate-400">
-              Calendar intensity for {getJalaliPeriodLabel(selectedPeriod)} ({data?.total_days || 30} days)
+              Calendar intensity for {periodLabel} ({data?.total_days || 30} days)
             </p>
           </div>
         </div>
@@ -90,10 +99,10 @@ export const SpendingHeatmap: React.FC = () => {
               d.amount
             )}`}
           >
-            <span className="text-[10px] font-mono font-bold leading-none">{d.day}</span>
+            <span className="text-[10px] font-mono tabular-nums font-bold leading-none">{d.day}</span>
             {parseFloat(d.amount) > 0 && (
-              <span className="text-[8px] font-mono opacity-80 mt-0.5 truncate max-w-full">
-                {parseFloat(d.amount).toFixed(0)}k
+              <span className="text-[8px] font-mono tabular-nums opacity-80 mt-0.5 truncate max-w-full">
+                {formatKToman(d.amount)}
               </span>
             )}
           </div>
@@ -103,12 +112,12 @@ export const SpendingHeatmap: React.FC = () => {
       {/* Footer Info / Hovered Tooltip */}
       <div className="mt-4 pt-3 border-t border-dark-border/60 flex items-center justify-between text-xs min-h-[32px]">
         {hoveredDay ? (
-          <div className="flex items-center gap-2 text-white animate-fade-in">
-            <span className="font-semibold text-cyan-400">{hoveredDay.date_label}:</span>
-            <span className="font-mono font-bold text-white">
-              {formatKToman(hoveredDay.amount)}
+          <div className="flex items-center gap-2 text-white animate-fade-in font-mono tabular-nums">
+            <span className="font-semibold text-cyan-400 font-sans">{hoveredDay.date_label}:</span>
+            <span className="font-mono tabular-nums font-bold text-white">
+              {formatKToman(hoveredDay.amount)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span>
             </span>
-            <span className="text-slate-400 text-[11px]">
+            <span className="text-slate-400 text-[11px] font-sans">
               ({hoveredDay.transaction_count} {hoveredDay.transaction_count === 1 ? "entry" : "entries"})
             </span>
           </div>
@@ -117,14 +126,14 @@ export const SpendingHeatmap: React.FC = () => {
             <span className="flex items-center gap-1">
               <TrendingUp className="w-3.5 h-3.5 text-brand" />
               <span>
-                Active spending days: <strong className="text-white">{daysWithSpend}</strong> / {days.length}
+                Active spending days: <strong className="text-white font-mono tabular-nums">{daysWithSpend}</strong> / {days.length}
               </span>
             </span>
             {maxSpend > 0 && (
               <span className="flex items-center gap-1">
                 <Flame className="w-3.5 h-3.5 text-outflow" />
                 <span>
-                  Peak day burn: <strong className="text-white font-mono">{formatKToman(maxSpend)}</strong>
+                  Peak day burn: <strong className="text-white font-mono tabular-nums">{formatKToman(maxSpend)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></strong>
                 </span>
               </span>
             )}

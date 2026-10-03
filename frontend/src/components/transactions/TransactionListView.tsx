@@ -134,29 +134,33 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({ onOpen
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="p-3.5 rounded-xl bg-dark-surface border border-dark-border">
             <span className="text-[11px] font-medium text-slate-400">Total Inflow</span>
-            <div className="text-base sm:text-lg font-mono font-bold text-inflow mt-0.5">
-              +{formatKToman(data.total_income)}
+            <div className="text-base sm:text-lg font-mono tabular-nums font-bold text-inflow mt-0.5 flex items-baseline gap-1">
+              <span>+{formatKToman(data.total_income)}</span>
+              <span className="text-xs font-sans font-normal text-slate-400">k-Toman</span>
             </div>
           </div>
           <div className="p-3.5 rounded-xl bg-dark-surface border border-dark-border">
             <span className="text-[11px] font-medium text-slate-400">Total Outflow</span>
-            <div className="text-base sm:text-lg font-mono font-bold text-outflow mt-0.5">
-              -{formatKToman(data.total_expense)}
+            <div className="text-base sm:text-lg font-mono tabular-nums font-bold text-outflow mt-0.5 flex items-baseline gap-1">
+              <span>-{formatKToman(data.total_expense)}</span>
+              <span className="text-xs font-sans font-normal text-slate-400">k-Toman</span>
             </div>
           </div>
           <div className="col-span-2 sm:col-span-1 p-3.5 rounded-xl bg-dark-surface border border-dark-border flex sm:flex-col items-center sm:items-start justify-between">
             <span className="text-[11px] font-medium text-slate-400">Net Period Result</span>
-            <div
-              className={`text-base sm:text-lg font-mono font-bold mt-0.5 ${
-                parseFloat(data.total_income) - parseFloat(data.total_expense) >= 0
-                  ? "text-inflow"
-                  : "text-outflow"
-              }`}
-            >
-              {formatKToman(
-                (parseFloat(data.total_income) - parseFloat(data.total_expense)).toFixed(2)
-              )}
-            </div>
+            {(() => {
+              const netVal = parseFloat(data.total_income) - parseFloat(data.total_expense);
+              return (
+                <div
+                  className={`text-base sm:text-lg font-mono tabular-nums font-bold mt-0.5 flex items-baseline gap-1 ${
+                    netVal >= 0 ? "text-inflow" : "text-outflow"
+                  }`}
+                >
+                  <span>{netVal >= 0 ? "+" : ""}{formatKToman(netVal)}</span>
+                  <span className="text-xs font-sans font-normal text-slate-400">k-Toman</span>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -257,12 +261,12 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({ onOpen
                       <div className="flex items-center gap-3 flex-shrink-0">
                         <div className="text-right">
                           <span
-                            className={`text-sm sm:text-base font-mono font-bold block ${
+                            className={`text-sm sm:text-base font-mono tabular-nums font-bold block ${
                               isExpense ? "text-outflow" : "text-inflow"
                             }`}
                           >
                             {isExpense ? "-" : "+"}
-                            {formatKToman(tx.amount)}
+                            {formatKToman(tx.amount)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-T</span>
                           </span>
                           <span className="text-[10px] text-slate-500 font-mono sm:hidden">
                             {tx.account?.name}

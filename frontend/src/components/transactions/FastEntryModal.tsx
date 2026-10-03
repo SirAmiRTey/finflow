@@ -291,7 +291,7 @@ export const FastEntryModal: React.FC<FastEntryModalProps> = ({ isOpen, onClose 
                 >
                   {accounts.map((acc: Account) => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.name} ({formatKToman(acc.current_balance)})
+                      {acc.name} ({formatKToman(acc.current_balance)} k-Toman)
                     </option>
                   ))}
                 </select>
@@ -327,7 +327,7 @@ export const FastEntryModal: React.FC<FastEntryModalProps> = ({ isOpen, onClose 
                 <Plus className="w-4 h-4" />
                 <span>
                   Save {type === "expense" ? "Expense" : "Income"}{" "}
-                  {amount ? `(${formatKToman(amount)})` : ""}
+                  {amount ? `(${formatKToman(amount)} k-Toman)` : ""}
                 </span>
               </>
             )}

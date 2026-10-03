@@ -8,17 +8,26 @@ import { formatKToman, formatJalaliDate, getJalaliPeriodLabel } from "@/utils/ja
 import { TopExpensesResponse } from "@/types";
 
 export const TopExpensesCard: React.FC = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
 
   const { data, isLoading } = useQuery<TopExpensesResponse>({
-    queryKey: ["analytics", "top-expenses", selectedPeriod],
+    queryKey: ["analytics", "top-expenses", selectedPeriod, selectedRange],
     queryFn: async () => {
+      const queryParam = selectedRange
+        ? `period=${selectedPeriod}&range=${selectedRange}&limit=5`
+        : `period=${selectedPeriod}&limit=5`;
       const res = await apiClient.get<TopExpensesResponse>(
-        `/analytics/top-expenses?period=${selectedPeriod}&limit=5`
+        `/analytics/top-expenses?${queryParam}`
       );
       return res.data;
     },
   });
+
+  const periodLabel = selectedRange
+    ? selectedRange === "all"
+      ? "All Time"
+      : `Last ${selectedRange.toUpperCase()}`
+    : getJalaliPeriodLabel(selectedPeriod);
 
   if (isLoading) {
     return (
@@ -42,13 +51,13 @@ export const TopExpensesCard: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">Largest Single Outflows</h3>
             <p className="text-[11px] text-slate-400">
-              Top 5 high-impact expenses for {getJalaliPeriodLabel(selectedPeriod)}
+              Top 5 high-impact expenses for {periodLabel}
             </p>
           </div>
         </div>
 
         {expenses.length > 0 && (
-          <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono tabular-nums">
             Outlier Watch
           </span>
         )}
@@ -64,7 +73,7 @@ export const TopExpensesCard: React.FC = () => {
             >
               {/* Left Details */}
               <div className="flex items-center gap-3 min-w-0">
-                <span className="text-xs font-mono font-bold text-slate-500 w-4 text-center">
+                <span className="text-xs font-mono tabular-nums font-bold text-slate-500 w-4 text-center">
                   #{idx + 1}
                 </span>
 
@@ -85,7 +94,7 @@ export const TopExpensesCard: React.FC = () => {
                     </span>
                     <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-dark-surface px-1.5 py-0.5 rounded border border-dark-border">
                       <Wallet className="w-2.5 h-2.5" />
-                      <span>{item.account_name}</span>
+                      <span className="truncate max-w-[90px]">{item.account_name}</span>
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 truncate mt-0.5">
@@ -95,11 +104,11 @@ export const TopExpensesCard: React.FC = () => {
               </div>
 
               {/* Right: Date & Amount */}
-              <div className="text-right flex-shrink-0">
-                <span className="text-xs sm:text-sm font-mono font-bold text-outflow block">
-                  -{formatKToman(item.amount)}
+              <div className="text-right flex-shrink-0 font-mono tabular-nums">
+                <span className="text-xs sm:text-sm font-mono tabular-nums font-bold text-outflow block">
+                  -{formatKToman(item.amount)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-T</span>
                 </span>
-                <span className="text-[10px] text-slate-500 font-mono flex items-center justify-end gap-1">
+                <span className="text-[10px] text-slate-500 font-mono tabular-nums flex items-center justify-end gap-1">
                   <Calendar className="w-2.5 h-2.5" />
                   <span>{formatJalaliDate(item.transaction_date)}</span>
                 </span>
@@ -114,7 +123,7 @@ export const TopExpensesCard: React.FC = () => {
           </div>
           <p className="text-xs font-semibold text-slate-300">No major outflows detected</p>
           <p className="text-[11px] text-slate-500 max-w-xs mt-0.5">
-            No expenses recorded in {getJalaliPeriodLabel(selectedPeriod)} yet.
+            No expenses recorded in {periodLabel} yet.
           </p>
         </div>
       )}

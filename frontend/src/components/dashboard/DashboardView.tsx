@@ -14,7 +14,13 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
+
+  const periodLabel = selectedRange
+    ? selectedRange === "all"
+      ? "All Time"
+      : `Last ${selectedRange.toUpperCase()}`
+    : getJalaliPeriodLabel(selectedPeriod);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -58,7 +64,7 @@ export const DashboardView: React.FC<DashboardViewProps> = () => {
       <footer className="pt-2 pb-6 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
         <Activity className="w-3.5 h-3.5 text-brand" />
         <span>
-          Deep Analytics Engine active for {getJalaliPeriodLabel(selectedPeriod)} • Jalali time-series indexed
+          Deep Analytics Engine active for {periodLabel} • Jalali time-series indexed
         </span>
       </footer>
     </div>

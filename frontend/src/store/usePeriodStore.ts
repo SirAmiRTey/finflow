@@ -1,12 +1,14 @@
 import { create } from "zustand";
 import { getCurrentJalaliPeriod, getJalaliPeriodLabel } from "@/utils/jalali";
-import { PeriodItem } from "@/types";
+import { PeriodItem, TimeRange } from "@/types";
 
 interface PeriodState {
   selectedPeriod: string; // 'YYYY-MM'
+  selectedRange: TimeRange | null; // '7d' | '30d' | '1y' | 'all' | null
   availablePeriods: PeriodItem[];
 
   setSelectedPeriod: (period: string) => void;
+  setSelectedRange: (range: TimeRange | null) => void;
   setAvailablePeriods: (periods: PeriodItem[]) => void;
   goToNextPeriod: () => void;
   goToPreviousPeriod: () => void;
@@ -17,6 +19,7 @@ export const usePeriodStore = create<PeriodState>((set, get) => {
 
   return {
     selectedPeriod: initialPeriod,
+    selectedRange: null,
     availablePeriods: [
       {
         period: initialPeriod,
@@ -28,7 +31,13 @@ export const usePeriodStore = create<PeriodState>((set, get) => {
     ],
 
     setSelectedPeriod: (period: string) => {
-      set({ selectedPeriod: period });
+      set({ selectedPeriod: period, selectedRange: null });
+    },
+
+    setSelectedRange: (range: TimeRange | null) => {
+      set((state) => ({
+        selectedRange: state.selectedRange === range ? null : range,
+      }));
     },
 
     setAvailablePeriods: (periods: PeriodItem[]) => {
@@ -40,7 +49,7 @@ export const usePeriodStore = create<PeriodState>((set, get) => {
       const currentIndex = availablePeriods.findIndex((p) => p.period === selectedPeriod);
       // availablePeriods are sorted descending (index 0 is newest)
       if (currentIndex > 0) {
-        set({ selectedPeriod: availablePeriods[currentIndex - 1].period });
+        set({ selectedPeriod: availablePeriods[currentIndex - 1].period, selectedRange: null });
       } else {
         // Increment month manually if at the newest
         try {
@@ -52,7 +61,7 @@ export const usePeriodStore = create<PeriodState>((set, get) => {
             month = 1;
           }
           const nextPeriod = `${year}-${String(month).padStart(2, "0")}`;
-          set({ selectedPeriod: nextPeriod });
+          set({ selectedPeriod: nextPeriod, selectedRange: null });
         } catch {
           // ignore
         }
@@ -63,7 +72,7 @@ export const usePeriodStore = create<PeriodState>((set, get) => {
       const { selectedPeriod, availablePeriods } = get();
       const currentIndex = availablePeriods.findIndex((p) => p.period === selectedPeriod);
       if (currentIndex !== -1 && currentIndex < availablePeriods.length - 1) {
-        set({ selectedPeriod: availablePeriods[currentIndex + 1].period });
+        set({ selectedPeriod: availablePeriods[currentIndex + 1].period, selectedRange: null });
       } else {
         // Decrement month manually
         try {
@@ -75,7 +84,7 @@ export const usePeriodStore = create<PeriodState>((set, get) => {
             month = 12;
           }
           const prevPeriod = `${year}-${String(month).padStart(2, "0")}`;
-          set({ selectedPeriod: prevPeriod });
+          set({ selectedPeriod: prevPeriod, selectedRange: null });
         } catch {
           // ignore
         }

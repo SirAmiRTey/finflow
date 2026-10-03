@@ -7,12 +7,15 @@ import { formatKToman, getJalaliPeriodLabel } from "@/utils/jalali";
 import { OverviewAnalytics } from "@/types";
 
 export const OverviewKPIs: React.FC = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
 
   const { data: overview, isLoading } = useQuery<OverviewAnalytics>({
-    queryKey: ["analytics", "overview", selectedPeriod],
+    queryKey: ["analytics", "overview", selectedPeriod, selectedRange],
     queryFn: async () => {
-      const res = await apiClient.get<OverviewAnalytics>(`/analytics/overview?period=${selectedPeriod}`);
+      const queryParam = selectedRange
+        ? `period=${selectedPeriod}&range=${selectedRange}`
+        : `period=${selectedPeriod}`;
+      const res = await apiClient.get<OverviewAnalytics>(`/analytics/overview?${queryParam}`);
       return res.data;
     },
   });
@@ -30,6 +33,7 @@ export const OverviewKPIs: React.FC = () => {
   if (!overview) return null;
 
   const isNetPositive = parseFloat(overview.net_savings) >= 0;
+  const periodLabel = overview.period_label || getJalaliPeriodLabel(overview.period);
 
   return (
     <div className="space-y-3">
@@ -38,34 +42,40 @@ export const OverviewKPIs: React.FC = () => {
         {/* Income Card */}
         <div className="p-4 rounded-2xl bg-dark-surface border border-dark-border relative overflow-hidden group hover:border-inflow/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Monthly Inflow</span>
+            <span className="text-xs font-medium">
+              {selectedRange ? "Total Inflow" : "Monthly Inflow"}
+            </span>
             <div className="p-1.5 rounded-lg bg-inflow/10 text-inflow">
               <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tight">
-            +{formatKToman(overview.total_income)}
+          <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tight tabular-nums flex items-baseline gap-1.5">
+            <span>+{formatKToman(overview.total_income)}</span>
+            <span className="text-xs font-sans font-normal text-slate-400">k-Toman</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            Recorded in {getJalaliPeriodLabel(overview.period)}
+            Recorded in {periodLabel}
           </p>
         </div>
 
         {/* Expense Card */}
         <div className="p-4 rounded-2xl bg-dark-surface border border-dark-border relative overflow-hidden group hover:border-outflow/40 transition-all">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-medium">Monthly Outflow</span>
+            <span className="text-xs font-medium">
+              {selectedRange ? "Total Outflow" : "Monthly Outflow"}
+            </span>
             <div className="p-1.5 rounded-lg bg-outflow/10 text-outflow">
               <ArrowDownRight className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tight">
-            -{formatKToman(overview.total_expense)}
+          <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tight tabular-nums flex items-baseline gap-1.5">
+            <span>-{formatKToman(overview.total_expense)}</span>
+            <span className="text-xs font-sans font-normal text-slate-400">k-Toman</span>
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
             <span>Burn rate:</span>
-            <span className="font-mono text-slate-300 font-medium">
-              {formatKToman(overview.daily_burn_rate)}/day
+            <span className="font-mono tabular-nums text-slate-300 font-medium">
+              {formatKToman(overview.daily_burn_rate)} k-T/day
             </span>
           </div>
         </div>
@@ -78,13 +88,13 @@ export const OverviewKPIs: React.FC = () => {
               <PiggyBank className="w-4 h-4" />
             </div>
           </div>
-          <div className={`text-lg sm:text-2xl font-mono font-bold tracking-tight ${isNetPositive ? "text-inflow" : "text-outflow"}`}>
-            {isNetPositive ? "+" : ""}
-            {formatKToman(overview.net_savings)}
+          <div className={`text-lg sm:text-2xl font-mono font-bold tracking-tight tabular-nums flex items-baseline gap-1.5 ${isNetPositive ? "text-inflow" : "text-outflow"}`}>
+            <span>{isNetPositive ? "+" : ""}{formatKToman(overview.net_savings)}</span>
+            <span className="text-xs font-sans font-normal text-slate-400">k-Toman</span>
           </div>
           <div className="flex items-center justify-between text-[11px] mt-1">
             <span className="text-slate-400">Savings Rate:</span>
-            <span className={`font-mono font-semibold px-1.5 py-0.2 rounded ${
+            <span className={`font-mono tabular-nums font-semibold px-1.5 py-0.2 rounded ${
               overview.savings_rate_percentage > 20
                 ? "bg-inflow/15 text-inflow"
                 : "bg-slate-800 text-slate-300"
@@ -102,13 +112,13 @@ export const OverviewKPIs: React.FC = () => {
               <Hourglass className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tight">
+          <div className="text-lg sm:text-2xl font-mono font-bold text-white tracking-tight tabular-nums">
             {overview.runway_days >= 999 ? "∞ Stable" : `${overview.runway_days} Days`}
           </div>
           <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
             <span>Cash pool:</span>
-            <span className="font-mono text-slate-300 font-medium">
-              {formatKToman(overview.total_liquidity)}
+            <span className="font-mono tabular-nums text-slate-300 font-medium">
+              {formatKToman(overview.total_liquidity)} k-Toman
             </span>
           </div>
         </div>

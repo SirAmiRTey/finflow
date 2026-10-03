@@ -9,17 +9,26 @@ import { formatKToman, getJalaliPeriodLabel } from "@/utils/jalali";
 import { CategoryBreakdownResponse } from "@/types";
 
 export const CategoryWaterfallDonut: React.FC = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
 
   const { data, isLoading } = useQuery<CategoryBreakdownResponse>({
-    queryKey: ["analytics", "category-breakdown", selectedPeriod],
+    queryKey: ["analytics", "category-breakdown", selectedPeriod, selectedRange],
     queryFn: async () => {
+      const queryParam = selectedRange
+        ? `period=${selectedPeriod}&range=${selectedRange}`
+        : `period=${selectedPeriod}`;
       const res = await apiClient.get<CategoryBreakdownResponse>(
-        `/analytics/category-breakdown?period=${selectedPeriod}`
+        `/analytics/category-breakdown?${queryParam}`
       );
       return res.data;
     },
   });
+
+  const periodLabel = selectedRange
+    ? selectedRange === "all"
+      ? "All Time"
+      : `Last ${selectedRange.toUpperCase()}`
+    : getJalaliPeriodLabel(selectedPeriod);
 
   if (isLoading) {
     return (
@@ -51,8 +60,8 @@ export const CategoryWaterfallDonut: React.FC = () => {
           formatter: (params: any) => `
             <div class="space-y-1">
               <div class="text-[11px] text-slate-400 font-medium">${params.name}</div>
-              <div class="text-sm font-mono font-bold text-white">${formatKToman(params.value)}</div>
-              <div class="text-[11px] text-brand font-semibold">${params.percent}% of monthly spend</div>
+              <div class="text-sm font-mono font-bold text-white tabular-nums">${formatKToman(params.value)} <span class="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></div>
+              <div class="text-[11px] text-brand font-semibold">${params.percent}% of spend</div>
             </div>
           `,
         },
@@ -96,7 +105,7 @@ export const CategoryWaterfallDonut: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">Category Spend Allocation</h3>
             <p className="text-[11px] text-slate-400">
-              Proportional distribution for {getJalaliPeriodLabel(selectedPeriod)}
+              Proportional distribution for {periodLabel}
             </p>
           </div>
         </div>
@@ -104,15 +113,15 @@ export const CategoryWaterfallDonut: React.FC = () => {
         {hasData && (
           <div className="text-right">
             <span className="text-[10px] text-slate-400 block leading-none">Total Outflow</span>
-            <span className="text-xs font-mono font-bold text-outflow">
-              {formatKToman(totalSpend)}
+            <span className="text-xs font-mono font-bold text-outflow tabular-nums">
+              {formatKToman(totalSpend)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span>
             </span>
           </div>
         )}
       </div>
 
       {hasData ? (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center">
           {/* Donut Chart with Center Total */}
           <div className="md:col-span-5 relative flex items-center justify-center h-[230px]">
             <ReactECharts
@@ -125,21 +134,22 @@ export const CategoryWaterfallDonut: React.FC = () => {
               <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">
                 Total
               </span>
-              <span className="text-sm sm:text-base font-mono font-bold text-white leading-tight">
-                {formatKToman(totalSpend, false)}
+              <span className="text-sm sm:text-base font-mono font-bold text-white leading-tight tabular-nums">
+                {formatKToman(totalSpend)}
               </span>
               <span className="text-[10px] text-slate-400 font-mono">k-Toman</span>
             </div>
           </div>
 
           {/* Ranked Breakdown List */}
-          <div className="md:col-span-7 space-y-3 max-h-[250px] overflow-y-auto pr-1">
+          <div className="md:col-span-7 space-y-3 max-h-[250px] overflow-y-auto pr-1.5">
             {breakdown.map((item) => (
               <div key={item.category_id} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 truncate">
+                <div className="flex items-center justify-between text-xs gap-3">
+                  {/* Category icon and full name */}
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div
-                      className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
+                      className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                       style={{
                         backgroundColor: `${item.color_hex}18`,
                         color: item.color_hex,
@@ -147,13 +157,19 @@ export const CategoryWaterfallDonut: React.FC = () => {
                     >
                       <CategoryIcon name={item.category_icon} className="w-3.5 h-3.5" />
                     </div>
-                    <span className="font-medium text-slate-200 truncate">
+                    <span
+                      title={item.category_name}
+                      className="font-medium text-slate-200 truncate"
+                    >
                       {item.category_name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 font-mono">
-                    <span className="text-slate-400 text-[11px]">{item.percentage}%</span>
-                    <span className="font-bold text-white">{formatKToman(item.total_amount)}</span>
+
+                  {/* Badges: percentage and formatted amount */}
+                  <div className="flex items-center gap-2.5 font-mono tabular-nums shrink-0">
+                    <span className="text-slate-400 text-[11px] tabular-nums font-mono">{item.percentage}%</span>
+                    <span className="font-bold text-white tabular-nums font-mono">{formatKToman(item.total_amount)}</span>
+                    <span className="text-[10px] text-slate-500 font-sans">k-T</span>
                   </div>
                 </div>
 
@@ -178,7 +194,7 @@ export const CategoryWaterfallDonut: React.FC = () => {
           </div>
           <p className="text-xs font-semibold text-slate-300">No categorised expenditures</p>
           <p className="text-[11px] text-slate-500 max-w-xs mt-0.5">
-            Log expense transactions in {getJalaliPeriodLabel(selectedPeriod)} to view category allocation.
+            Log expense transactions in {periodLabel} to view category allocation.
           </p>
         </div>
       )}

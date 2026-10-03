@@ -34,8 +34,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user, totalLiquidity, isAuthenticated, logout } = useAuthStore();
   const {
     selectedPeriod,
+    selectedRange,
     availablePeriods,
     setSelectedPeriod,
+    setSelectedRange,
     setAvailablePeriods,
     goToPreviousPeriod,
     goToNextPeriod,
@@ -127,7 +129,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {isAuthenticated ? (
           <div className="flex items-center justify-between md:justify-end gap-2.5">
             {/* Jalali Period Navigator Stepper */}
-            <div className="flex items-center gap-0.5 bg-dark-surface/90 border border-dark-border rounded-xl p-0.5 shadow-inner">
+            <div
+              className={`flex items-center gap-0.5 bg-dark-surface/90 border rounded-xl p-0.5 shadow-inner transition-colors ${
+                selectedRange === null ? "border-brand/40 shadow-brand/10" : "border-dark-border"
+              }`}
+            >
               <button
                 type="button"
                 onClick={goToPreviousPeriod}
@@ -162,13 +168,35 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
+            {/* Dashboard Time Range Selector Pill-Tabs [ 7D | 30D | 1Y | ALL ] */}
+            <div className="flex items-center bg-dark-surface/90 border border-dark-border rounded-xl p-0.5 shadow-inner">
+              {(["7d", "30d", "1y", "all"] as const).map((r) => {
+                const labelMap = { "7d": "7D", "30d": "30D", "1y": "1Y", all: "ALL" };
+                const isActive = selectedRange === r;
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setSelectedRange(r)}
+                    className={`px-2 sm:px-2.5 py-1 rounded-lg text-xs font-semibold font-mono tracking-tight transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-brand text-white shadow-sm shadow-brand/40 font-bold"
+                        : "text-slate-400 hover:text-white hover:bg-dark-hover"
+                    }`}
+                  >
+                    {labelMap[r]}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Total Liquidity Badge (Desktop) */}
             <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-xl bg-dark-surface border border-dark-border">
               <Wallet className="w-3.5 h-3.5 text-inflow" />
               <div>
                 <span className="text-[9px] text-slate-400 block leading-tight">Total Liquidity</span>
-                <span className="text-xs font-mono font-bold text-white leading-tight">
-                  {formatKToman(totalLiquidity)}
+                <span className="text-xs font-mono font-bold text-white tabular-nums leading-tight">
+                  {formatKToman(totalLiquidity)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span>
                 </span>
               </div>
             </div>
@@ -201,9 +229,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="px-3 py-2 border-b border-dark-border/60">
                     <p className="text-xs font-semibold text-white truncate">{user?.full_name}</p>
                     <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
-                    <div className="mt-1.5 flex items-center justify-between text-[11px] font-mono text-slate-300">
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] font-mono tabular-nums text-slate-300">
                       <span>Liquidity:</span>
-                      <span className="text-inflow font-bold">{formatKToman(totalLiquidity)}</span>
+                      <span className="text-inflow font-bold">{formatKToman(totalLiquidity)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></span>
                     </div>
                   </div>
 
@@ -243,8 +271,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
             <div className="text-right">
               <span className="text-[10px] text-slate-400 block">Total Liquidity</span>
-              <span className="text-xs font-mono font-bold text-inflow">
-                {formatKToman(totalLiquidity)}
+              <span className="text-xs font-mono font-bold text-inflow tabular-nums">
+                {formatKToman(totalLiquidity)} <span className="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span>
               </span>
             </div>
           </div>

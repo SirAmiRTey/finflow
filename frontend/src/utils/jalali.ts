@@ -39,9 +39,17 @@ export function getJalaliMonthName(monthNumber: number): string {
 
 /**
  * Converts 'YYYY-MM' period string into human label, e.g. '1405-07' -> 'Mehr 1405'.
+ * Also handles quick-range keys ('7d', '30d', '1y', 'all').
  */
 export function getJalaliPeriodLabel(periodStr: string): string {
-  if (!periodStr || !periodStr.includes("-")) return periodStr;
+  if (!periodStr) return "";
+  const lower = periodStr.toLowerCase().trim();
+  if (lower === "7d") return "Last 7 Days";
+  if (lower === "30d") return "Last 30 Days";
+  if (lower === "1y") return "Last 1 Year";
+  if (lower === "all") return "All Time";
+
+  if (!periodStr.includes("-")) return periodStr;
   const [yearStr, monthStr] = periodStr.split("-");
   const month = parseInt(monthStr, 10);
   return `${getJalaliMonthName(month)} ${yearStr}`;
@@ -64,14 +72,26 @@ export function getCurrentJalaliPeriod(): string {
 }
 
 /**
- * Format currency in k-Toman with tabular commas and suffix.
+ * Clean Number & Currency Formatter for k-Toman amounts.
+ * - If whole integer (or ends in .00), completely omits decimal places:
+ *   5000.00 -> "5,000", -6498.00 -> "-6,498", 26437.00 -> "26,437".
+ * - If meaningful decimal fractions exist, displays up to 1-2 decimal places without trailing zeros:
+ *   44.80 -> "44.8", 12.75 -> "12.75".
+ * - Optional includeSuffix parameter defaults to false.
  */
-export function formatKToman(value: number | string, includeSuffix = true): string {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (isNaN(num)) return `0.00${includeSuffix ? " k-Toman" : ""}`;
+export function formatKToman(amount: number | string, includeSuffix = false): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num) || num === null || num === undefined) {
+    return includeSuffix ? "0 k-Toman" : "0";
+  }
+  if (num === 0) {
+    return includeSuffix ? "0 k-Toman" : "0";
+  }
+
   const formatted = num.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+
   return includeSuffix ? `${formatted} k-Toman` : formatted;
 }

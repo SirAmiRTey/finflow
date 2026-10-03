@@ -9,17 +9,26 @@ import { formatKToman, getJalaliPeriodLabel } from "@/utils/jalali";
 import { CumulativeBurnResponse } from "@/types";
 
 export const CumulativeBurnChart: React.FC = () => {
-  const selectedPeriod = usePeriodStore((s) => s.selectedPeriod);
+  const { selectedPeriod, selectedRange } = usePeriodStore();
 
   const { data, isLoading } = useQuery<CumulativeBurnResponse>({
-    queryKey: ["analytics", "cumulative-burn", selectedPeriod],
+    queryKey: ["analytics", "cumulative-burn", selectedPeriod, selectedRange],
     queryFn: async () => {
+      const queryParam = selectedRange
+        ? `period=${selectedPeriod}&range=${selectedRange}`
+        : `period=${selectedPeriod}`;
       const res = await apiClient.get<CumulativeBurnResponse>(
-        `/analytics/cumulative-burn?period=${selectedPeriod}`
+        `/analytics/cumulative-burn?${queryParam}`
       );
       return res.data;
     },
   });
+
+  const periodLabel = selectedRange
+    ? selectedRange === "all"
+      ? "All Time"
+      : `Last ${selectedRange.toUpperCase()}`
+    : getJalaliPeriodLabel(selectedPeriod);
 
   if (isLoading) {
     return (
@@ -31,12 +40,13 @@ export const CumulativeBurnChart: React.FC = () => {
   }
 
   const days = data?.days || [];
-  const xLabels = days.map((d) => `Day ${d.day}`);
+  const xLabels = days.map((d) => d.date_label || `Day ${d.day}`);
   const incomeSeries = days.map((d) => parseFloat(d.cumulative_income));
   const expenseSeries = days.map((d) => parseFloat(d.cumulative_expense));
 
   const option = {
     backgroundColor: "transparent",
+    color: ["#04CE78", "#FF4D6A"],
     tooltip: {
       trigger: "axis",
       backgroundColor: "#131B2E",
@@ -61,15 +71,15 @@ export const CumulativeBurnChart: React.FC = () => {
             <div class="text-[11px] font-semibold text-slate-300 border-b border-slate-700/60 pb-1">${dayData?.date_label}</div>
             <div class="flex items-center justify-between gap-4 text-xs">
               <span class="text-inflow flex items-center gap-1 font-medium">● Cumulative Inflow:</span>
-              <span class="font-mono font-bold text-white">${formatKToman(inc)}</span>
+              <span class="font-mono tabular-nums font-bold text-white">${formatKToman(inc)} <span class="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></span>
             </div>
             <div class="flex items-center justify-between gap-4 text-xs">
               <span class="text-outflow flex items-center gap-1 font-medium">● Cumulative Outflow:</span>
-              <span class="font-mono font-bold text-white">${formatKToman(exp)}</span>
+              <span class="font-mono tabular-nums font-bold text-white">${formatKToman(exp)} <span class="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></span>
             </div>
             <div class="flex items-center justify-between gap-4 text-xs pt-1 border-t border-slate-700/60 font-semibold">
               <span class="text-slate-400">Spread / Retained:</span>
-              <span class="font-mono ${net >= 0 ? "text-inflow" : "text-outflow"}">${formatKToman(net)}</span>
+              <span class="font-mono tabular-nums ${net >= 0 ? "text-inflow" : "text-outflow"}">${net >= 0 ? "+" : ""}${formatKToman(net)} <span class="text-[10px] text-slate-400 font-sans font-normal">k-Toman</span></span>
             </div>
           </div>
         `;
@@ -102,7 +112,7 @@ export const CumulativeBurnChart: React.FC = () => {
       axisLabel: {
         color: "#64748B",
         fontSize: 10,
-        interval: 4,
+        interval: days.length > 20 ? 4 : days.length > 10 ? 2 : 0,
       },
     },
     yAxis: {
@@ -112,7 +122,7 @@ export const CumulativeBurnChart: React.FC = () => {
       axisLabel: {
         color: "#64748B",
         fontSize: 10,
-        formatter: (val: number) => `${val}k`,
+        formatter: (val: number) => formatKToman(val),
       },
     },
     series: [
@@ -122,6 +132,9 @@ export const CumulativeBurnChart: React.FC = () => {
         smooth: 0.35,
         data: incomeSeries,
         symbol: "none",
+        itemStyle: {
+          color: "#04CE78",
+        },
         lineStyle: {
           color: "#04CE78",
           width: 2.5,
@@ -139,6 +152,9 @@ export const CumulativeBurnChart: React.FC = () => {
         smooth: 0.35,
         data: expenseSeries,
         symbol: "none",
+        itemStyle: {
+          color: "#FF4D6A",
+        },
         lineStyle: {
           color: "#FF4D6A",
           width: 2.5,
@@ -164,7 +180,7 @@ export const CumulativeBurnChart: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight">Cumulative Burn Trajectory</h3>
             <p className="text-[11px] text-slate-400">
-              Running Inflow vs. Outflow curve for {getJalaliPeriodLabel(selectedPeriod)}
+              Running Inflow vs. Outflow curve for {periodLabel}
             </p>
           </div>
         </div>
