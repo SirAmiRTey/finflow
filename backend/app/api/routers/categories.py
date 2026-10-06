@@ -1,10 +1,11 @@
 from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 
 from app.api.deps import CurrentUserDep, SessionDep
 from app.models.category import Category
+from app.models.transaction import Transaction
 from app.schemas.category import (
     CategoryCreate,
     CategoryResponse,
@@ -26,17 +27,24 @@ async def list_categories(
     db: SessionDep,
     type: Optional[CategoryType] = Query(None, description="Filter by 'income' or 'expense'"),
 ) -> List[CategoryResponse]:
-    query = select(Category).where(
-        or_(
-            Category.is_system == True,  # noqa: E712
-            Category.user_id == current_user.id,
+    query = (
+        select(Category)
+        .outerjoin(Transaction, Transaction.category_id == Category.id)
+        .where(
+            or_(
+                Category.is_system == True,  # noqa: E712
+                Category.user_id == current_user.id,
+            )
         )
     )
 
     if type is not None:
         query = query.where(Category.type == type)
 
-    query = query.order_by(Category.is_system.desc(), Category.name.asc())
+    query = query.group_by(Category.id).order_by(
+        func.count(Transaction.id).desc(),
+        Category.name.asc(),
+    )
     result = await db.execute(query)
     categories = result.scalars().all()
     return [CategoryResponse.model_validate(c) for c in categories]
